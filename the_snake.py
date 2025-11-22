@@ -16,7 +16,7 @@ RED = (255, 0, 0)
 
 
 class GameObject:
-    def _init_(self, position: Tuple[int, int]):
+    def _init_(self, position: Tuple[int, int]) -> None:
         self.position = position
         self.body_color = (255, 255, 255)
 
@@ -25,12 +25,14 @@ class GameObject:
 
 
 class Apple(GameObject):
-    def _init_(self, forbidden: Optional[List[Tuple[int, int]]] = None):
+    def _init_(self, forbidden: Optional[List[Tuple[int, int]]] = None) -> None:
         super()._init_((0, 0))
         self.body_color = RED
         self.randomize_position(forbidden)
 
-    def randomize_position(self, forbidden: Optional[List[Tuple[int, int]]] = None):
+    def randomize_position(
+        self, forbidden: Optional[List[Tuple[int, int]]] = None
+    ) -> None:
         if forbidden is None:
             forbidden = []
         while True:
@@ -41,11 +43,12 @@ class Apple(GameObject):
                 return
 
     def draw(self, surface: pygame.Surface) -> None:
-        pygame.draw.rect(surface, self.body_color, (self.position[0], self.position[1], CELL_SIZE, CELL_SIZE))
+        r = (self.position[0], self.position[1], CELL_SIZE, CELL_SIZE)
+        pygame.draw.rect(surface, self.body_color, r)
 
 
 class Snake(GameObject):
-    def _init_(self):
+    def _init_(self) -> None:
         cx = GRID_WIDTH // 2 * CELL_SIZE
         cy = GRID_HEIGHT // 2 * CELL_SIZE
         super()._init_((cx, cy))
@@ -71,18 +74,19 @@ class Snake(GameObject):
 
     def move(self) -> Optional[Tuple[int, int]]:
         dx, dy = self.direction
-        head_x, head_y = self.get_head_position()
-        new_x = (head_x + dx) % SCREEN_WIDTH
-        new_y = (head_y + dy) % SCREEN_HEIGHT
-        self.positions.insert(0, (new_x, new_y))
+        hx, hy = self.get_head_position()
+        nx = (hx + dx) % SCREEN_WIDTH
+        ny = (hy + dy) % SCREEN_HEIGHT
+        self.positions.insert(0, (nx, ny))
         removed = None
         if len(self.positions) > self.length:
             removed = self.positions.pop()
         return removed
 
     def draw(self, surface: pygame.Surface) -> None:
-        for pos in self.positions:
-            pygame.draw.rect(surface, self.body_color, (pos[0], pos[1], CELL_SIZE, CELL_SIZE))
+        for p in self.positions:
+            r = (p[0], p[1], CELL_SIZE, CELL_SIZE)
+            pygame.draw.rect(surface, self.body_color, r)
 
     def reset(self) -> None:
         cx = GRID_WIDTH // 2 * CELL_SIZE
@@ -111,29 +115,25 @@ def handle_keys(snake: Snake) -> bool:
     return True
 
 
-def main():
+def main() -> None:
     pygame.init()
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     clock = pygame.time.Clock()
-
     snake = Snake()
     apple = Apple(snake.positions)
-
     running = True
+
     while running:
         running = handle_keys(snake)
         snake.update_direction()
         snake.move()
-
         if snake.get_head_position() == apple.position:
             snake.length += 1
             apple.randomize_position(snake.positions)
-
         head = snake.get_head_position()
         if head in snake.positions[1:]:
             snake.reset()
             apple.randomize_position(snake.positions)
-
         screen.fill(BLACK)
         apple.draw(screen)
         snake.draw(screen)
