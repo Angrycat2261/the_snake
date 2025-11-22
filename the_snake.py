@@ -41,7 +41,7 @@ class Apple(GameObject):
                 return
 
     def draw(self, surface: pygame.Surface) -> None:
-        pygame.draw.rect(surface, self.body_color, (*self.position, CELL_SIZE, CELL_SIZE))
+        pygame.draw.rect(surface, self.body_color, (self.position[0], self.position[1], CELL_SIZE, CELL_SIZE))
 
 
 class Snake(GameObject):
@@ -82,7 +82,7 @@ class Snake(GameObject):
 
     def draw(self, surface: pygame.Surface) -> None:
         for pos in self.positions:
-            pygame.draw.rect(surface, self.body_color, (*pos, CELL_SIZE, CELL_SIZE))
+            pygame.draw.rect(surface, self.body_color, (pos[0], pos[1], CELL_SIZE, CELL_SIZE))
 
     def reset(self) -> None:
         cx = GRID_WIDTH // 2 * CELL_SIZE
@@ -145,4 +145,4 @@ def main():
 
 
 if _name_ == "_main_":
-    main()
+    main()
