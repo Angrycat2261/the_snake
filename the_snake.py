@@ -5,101 +5,51 @@ import sys
 
 class Snake:
     def __init__(self):
-        self.position = [100, 50]
-        self.body = [[100, 50], [90, 50], [80, 50]]
-        self.direction = "RIGHT"
-        self.change_to = self.direction
+        self.body = [(100, 100), (90, 100), (80, 100)]
+        self.direction = (10, 0)
 
-    def change_direction(self, direction):
-        self.change_to = direction
+    def move(self):
+        head = self.body[0]
+        new_head = (head[0] + self.direction[0], head[1] + self.direction[1])
+        self.body.insert(0, new_head)
+        self.body.pop()
 
-    def update_direction(self):
-        if self.change_to == "RIGHT" and not self.direction == "LEFT":
-            self.direction = "RIGHT"
-        if self.change_to == "LEFT" and not self.direction == "RIGHT":
-            self.direction = "LEFT"
-        if self.change_to == "UP" and not self.direction == "DOWN":
-            self.direction = "UP"
-        if self.change_to == "DOWN" and not self.direction == "UP":
-            self.direction = "DOWN"
+    def grow(self):
+        self.body.append(self.body[-1])
 
-    def move(self, food_position):
-        self.update_direction()
-        
-        if self.direction == "RIGHT":
-            self.position[0] += 10
-        if self.direction == "LEFT":
-            self.position[0] -= 10
-        if self.direction == "UP":
-            self.position[1] -= 10
-        if self.direction == "DOWN":
-            self.position[1] += 10
+    def change_direction(self, new_direction):
+        self.direction = new_direction
 
-        self.body.insert(0, list(self.position))
-        
-        if (self.position[0] == food_position[0] 
-                and self.position[1] == food_position[1]):
-            return True
-        else:
-            self.body.pop()
-            return False
-
-    def check_collision(self, window_width, window_height):
-        if (self.position[0] > window_width - 10 
-                or self.position[0] < 0 
-                or self.position[1] > window_height - 10 
-                or self.position[1] < 0):
-            return True
-        
-        for segment in self.body[1:]:
-            if (self.position[0] == segment[0] 
-                    and self.position[1] == segment[1]):
-                return True
-        
-        return False
-
-    def get_head_position(self):
-        return self.position
-
-    def get_body(self):
-        return self.body
+    def check_collision(self, screen_width, screen_height):
+        head = self.body[0]
+        return (head[0] < 0 or head[0] >= screen_width or
+                head[1] < 0 or head[1] >= screen_height or
+                head in self.body[1:])
 
 
 class Food:
-    def __init__(self, window_width, window_height):
-        self.window_width = window_width
-        self.window_height = window_height
-        self.position = self.generate_position()
+    def __init__(self, screen_width, screen_height):
+        self.position = (0, 0)
+        self.screen_width = screen_width
+        self.screen_height = screen_height
+        self.randomize_position()
 
-    def generate_position(self):
-        return [
-            random.randrange(1, (self.window_width // 10)) * 10,
-            random.randrange(1, (self.window_height // 10)) * 10
-        ]
-
-    def respawn(self):
-        self.position = self.generate_position()
-
-    def get_position(self):
-        return self.position
+    def randomize_position(self):
+        x = random.randint(0, (self.screen_width - 10) // 10) * 10
+        y = random.randint(0, (self.screen_height - 10) // 10) * 10
+        self.position = (x, y)
 
 
 class Game:
     def __init__(self):
         pygame.init()
-        
-        self.window_width = 800
-        self.window_height = 600
-        self.window = pygame.display.set_mode(
-            (self.window_width, self.window_height)
-        )
-        pygame.display.set_caption('Snake Game')
-        
+        self.screen_width = 800
+        self.screen_height = 600
+        self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
+        pygame.display.set_caption("Змейка")
         self.clock = pygame.time.Clock()
-        self.font = pygame.font.SysFont('Arial', 35)
-        
         self.snake = Snake()
-        self.food = Food(self.window_width, self.window_height)
+        self.food = Food(self.screen_width, self.screen_height)
         self.score = 0
         self.game_over = False
 
@@ -109,75 +59,60 @@ class Game:
                 pygame.quit()
                 sys.exit()
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_UP:
-                    self.snake.change_direction("UP")
-                elif event.key == pygame.K_DOWN:
-                    self.snake.change_direction("DOWN")
-                elif event.key == pygame.K_LEFT:
-                    self.snake.change_direction("LEFT")
-                elif event.key == pygame.K_RIGHT:
-                    self.snake.change_direction("RIGHT")
-                elif event.key == pygame.K_r and self.game_over:
+                if not self.game_over:
+                    if event.key == pygame.K_UP and self.snake.direction != (0, 10):
+                        self.snake.change_direction((0, -10))
+                    elif event.key == pygame.K_DOWN and self.snake.direction != (0, -10):
+                        self.snake.change_direction((0, 10))
+                    elif event.key == pygame.K_LEFT and self.snake.direction != (10, 0):
+                        self.snake.change_direction((-10, 0))
+                    elif event.key == pygame.K_RIGHT and self.snake.direction != (-10, 0):
+                        self.snake.change_direction((10, 0))
+                if event.key == pygame.K_r and self.game_over:
                     self.restart_game()
-                elif event.key == pygame.K_q:
-                    pygame.quit()
-                    sys.exit()
 
     def update(self):
         if not self.game_over:
-            food_eaten = self.snake.move(self.food.get_position())
-            
-            if food_eaten:
-                self.score += 1
-                self.food.respawn()
-                while self.food.get_position() in self.snake.get_body():
-                    self.food.respawn()
-            
-            if self.snake.check_collision(
-                    self.window_width, self.window_height):
+            self.snake.move()
+
+            if self.snake.check_collision(self.screen_width, self.screen_height):
                 self.game_over = True
 
-    def render(self):
-        self.window.fill((0, 0, 0))
-        
-        for segment in self.snake.get_body():
-            pygame.draw.rect(
-                self.window, 
-                (0, 255, 0), 
-                pygame.Rect(segment[0], segment[1], 10, 10)
-            )
-        
-        pygame.draw.rect(
-            self.window,
-            (255, 0, 0),
-            pygame.Rect(
-                self.food.get_position()[0],
-                self.food.get_position()[1],
-                10,
-                10
-            )
-        )
-        
-        score_text = self.font.render(
-            f'Score: {self.score}', True, (255, 255, 255))
-        self.window.blit(score_text, (10, 10))
-        
+            if self.snake.body[0] == self.food.position:
+                self.snake.grow()
+                self.food.randomize_position()
+                while self.food.position in self.snake.body:
+                    self.food.randomize_position()
+                self.score += 10
+
+    def draw(self):
+        self.screen.fill((0, 0, 0))
+
+        for segment in self.snake.body:
+            pygame.draw.rect(self.screen, (0, 255, 0), 
+                           (segment[0], segment[1], 10, 10))
+
+        pygame.draw.rect(self.screen, (255, 0, 0),
+                       (self.food.position[0], self.food.position[1], 10, 10))
+
+        font = pygame.font.Font(None, 36)
+        score_text = font.render(f"Счет: {self.score}", True, (255, 255, 255))
+        self.screen.blit(score_text, (10, 10))
+
         if self.game_over:
-            game_over_text = self.font.render(
-                'Game Over! Press R to restart or Q to quit', 
-                True, 
-                (255, 255, 255)
-            )
-            text_rect = game_over_text.get_rect(
-                center=(self.window_width // 2, self.window_height // 2)
-            )
-            self.window.blit(game_over_text, text_rect)
-        
-        pygame.display.update()
+            game_over_font = pygame.font.Font(None, 72)
+            game_over_text = game_over_font.render("ИГРА ОКОНЧЕНА", True, (255, 0, 0))
+            restart_text = font.render("Нажмите R для перезапуска", True, (255, 255, 255))
+            self.screen.blit(game_over_text, 
+                           (self.screen_width // 2 - 180, self.screen_height // 2 - 50))
+            self.screen.blit(restart_text,
+                           (self.screen_width // 2 - 150, self.screen_height // 2 + 50))
+
+        pygame.display.flip()
 
     def restart_game(self):
         self.snake = Snake()
-        self.food = Food(self.window_width, self.window_height)
+        self.food = Food(self.screen_width, self.screen_height)
         self.score = 0
         self.game_over = False
 
@@ -185,7 +120,7 @@ class Game:
         while True:
             self.handle_events()
             self.update()
-            self.render()
+            self.draw()
             self.clock.tick(15)
 
 
