@@ -1,144 +1,148 @@
 import pygame
 import random
 import sys
+from typing import List, Tuple, Optional
+
+CELL_SIZE = 20
+SCREEN_WIDTH = 640
+SCREEN_HEIGHT = 480
+GRID_WIDTH = SCREEN_WIDTH // CELL_SIZE
+GRID_HEIGHT = SCREEN_HEIGHT // CELL_SIZE
+FPS = 20
+
+BLACK = (0, 0, 0)
+GREEN = (0, 255, 0)
+RED = (255, 0, 0)
 
 
-class Snake:
-    def __init__(self):
-        self.body = [(100, 100), (90, 100), (80, 100)]
-        self.direction = (10, 0)
+class GameObject:
+    def _init_(self, position: Tuple[int, int]):
+        self.position = position
+        self.body_color = (255, 255, 255)
 
-    def move(self):
-        head = self.body[0]
-        new_head = (head[0] + self.direction[0], head[1] + self.direction[1])
-        self.body.insert(0, new_head)
-        self.body.pop()
-
-    def grow(self):
-        self.body.append(self.body[-1])
-
-    def change_direction(self, new_direction):
-        self.direction = new_direction
-
-    def check_collision(self, screen_width, screen_height):
-        head = self.body[0]
-        return (head[0] < 0 or head[0] >= screen_width
-                or head[1] < 0 or head[1] >= screen_height
-                or head in self.body[1:])
+    def draw(self, surface: pygame.Surface) -> None:
+        pass
 
 
-class Food:
-    def __init__(self, screen_width, screen_height):
-        self.position = (0, 0)
-        self.screen_width = screen_width
-        self.screen_height = screen_height
-        self.randomize_position()
+class Apple(GameObject):
+    def _init_(self, forbidden: Optional[List[Tuple[int, int]]] = None):
+        super()._init_((0, 0))
+        self.body_color = RED
+        self.randomize_position(forbidden)
 
-    def randomize_position(self):
-        x = random.randint(0, (self.screen_width - 10) // 10) * 10
-        y = random.randint(0, (self.screen_height - 10) // 10) * 10
-        self.position = (x, y)
-
-
-class Game:
-    def __init__(self):
-        pygame.init()
-        self.screen_width = 800
-        self.screen_height = 600
-        self.screen = pygame.display.set_mode(
-            (self.screen_width, self.screen_height)
-        )
-        pygame.display.set_caption("Змейка")
-        self.clock = pygame.time.Clock()
-        self.snake = Snake()
-        self.food = Food(self.screen_width, self.screen_height)
-        self.score = 0
-        self.game_over = False
-
-    def handle_events(self):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            elif event.type == pygame.KEYDOWN:
-                if not self.game_over:
-                    if (event.key == pygame.K_UP 
-                            and self.snake.direction != (0, 10)):
-                        self.snake.change_direction((0, -10))
-                    elif (event.key == pygame.K_DOWN 
-                            and self.snake.direction != (0, -10)):
-                        self.snake.change_direction((0, 10))
-                    elif (event.key == pygame.K_LEFT 
-                            and self.snake.direction != (10, 0)):
-                        self.snake.change_direction((-10, 0))
-                    elif (event.key == pygame.K_RIGHT 
-                            and self.snake.direction != (-10, 0)):
-                        self.snake.change_direction((10, 0))
-                if event.key == pygame.K_r and self.game_over:
-                    self.restart_game()
-
-    def update(self):
-        if not self.game_over:
-            self.snake.move()
-
-            if self.snake.check_collision(self.screen_width, 
-                                          self.screen_height):
-                self.game_over = True
-
-            if self.snake.body[0] == self.food.position:
-                self.snake.grow()
-                self.food.randomize_position()
-                while self.food.position in self.snake.body:
-                    self.food.randomize_position()
-                self.score += 10
-
-    def draw(self):
-        self.screen.fill((0, 0, 0))
-
-        for segment in self.snake.body:
-            pygame.draw.rect(self.screen, (0, 255, 0),
-                             (segment[0], segment[1], 10, 10))
-
-        pygame.draw.rect(self.screen, (255, 0, 0),
-                         (self.food.position[0], self.food.position[1], 10, 10))
-
-        font = pygame.font.Font(None, 36)
-        score_text = font.render(f"Счет: {self.score}", True, (255, 255, 255))
-        self.screen.blit(score_text, (10, 10))
-
-        if self.game_over:
-            game_over_font = pygame.font.Font(None, 72)
-            game_over_text = game_over_font.render("ИГРА ОКОНЧЕНА", 
-                                                   True, (255, 0, 0))
-            restart_text = font.render("Нажмите R для перезапуска", 
-                                       True, (255, 255, 255))
-            self.screen.blit(game_over_text,
-                             (self.screen_width // 2 - 180, 
-                              self.screen_height // 2 - 50))
-            self.screen.blit(restart_text,
-                             (self.screen_width // 2 - 150, 
-                              self.screen_height // 2 + 50))
-
-        pygame.display.flip()
-
-    def restart_game(self):
-        self.snake = Snake()
-        self.food = Food(self.screen_width, self.screen_height)
-        self.score = 0
-        self.game_over = False
-
-    def run(self):
+    def randomize_position(self, forbidden: Optional[List[Tuple[int, int]]] = None):
+        if forbidden is None:
+            forbidden = []
         while True:
-            self.handle_events()
-            self.update()
-            self.draw()
-            self.clock.tick(15)
+            x = random.randrange(0, GRID_WIDTH) * CELL_SIZE
+            y = random.randrange(0, GRID_HEIGHT) * CELL_SIZE
+            if (x, y) not in forbidden:
+                self.position = (x, y)
+                return
+
+    def draw(self, surface: pygame.Surface) -> None:
+        pygame.draw.rect(surface, self.body_color, (*self.position, CELL_SIZE, CELL_SIZE))
+
+
+class Snake(GameObject):
+    def _init_(self):
+        cx = GRID_WIDTH // 2 * CELL_SIZE
+        cy = GRID_HEIGHT // 2 * CELL_SIZE
+        super()._init_((cx, cy))
+        self.body_color = GREEN
+        self.length = 1
+        self.positions = [(cx, cy)]
+        self.direction = (CELL_SIZE, 0)
+        self.next_direction = None
+
+    def get_head_position(self) -> Tuple[int, int]:
+        return self.positions[0]
+
+    def update_direction(self) -> None:
+        if self.next_direction is None:
+            return
+        ndx, ndy = self.next_direction
+        dx, dy = self.direction
+        if ndx == -dx and ndy == -dy:
+            self.next_direction = None
+            return
+        self.direction = (ndx, ndy)
+        self.next_direction = None
+
+    def move(self) -> Optional[Tuple[int, int]]:
+        dx, dy = self.direction
+        head_x, head_y = self.get_head_position()
+        new_x = (head_x + dx) % SCREEN_WIDTH
+        new_y = (head_y + dy) % SCREEN_HEIGHT
+        self.positions.insert(0, (new_x, new_y))
+        removed = None
+        if len(self.positions) > self.length:
+            removed = self.positions.pop()
+        return removed
+
+    def draw(self, surface: pygame.Surface) -> None:
+        for pos in self.positions:
+            pygame.draw.rect(surface, self.body_color, (*pos, CELL_SIZE, CELL_SIZE))
+
+    def reset(self) -> None:
+        cx = GRID_WIDTH // 2 * CELL_SIZE
+        cy = GRID_HEIGHT // 2 * CELL_SIZE
+        self.length = 1
+        self.positions = [(cx, cy)]
+        self.direction = (CELL_SIZE, 0)
+        self.next_direction = None
+
+
+def handle_keys(snake: Snake) -> bool:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            return False
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                return False
+            if event.key in (pygame.K_UP, pygame.K_w):
+                snake.next_direction = (0, -CELL_SIZE)
+            elif event.key in (pygame.K_DOWN, pygame.K_s):
+                snake.next_direction = (0, CELL_SIZE)
+            elif event.key in (pygame.K_LEFT, pygame.K_a):
+                snake.next_direction = (-CELL_SIZE, 0)
+            elif event.key in (pygame.K_RIGHT, pygame.K_d):
+                snake.next_direction = (CELL_SIZE, 0)
+    return True
 
 
 def main():
-    game = Game()
-    game.run()
+    pygame.init()
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    clock = pygame.time.Clock()
+
+    snake = Snake()
+    apple = Apple(snake.positions)
+
+    running = True
+    while running:
+        running = handle_keys(snake)
+        snake.update_direction()
+        snake.move()
+
+        if snake.get_head_position() == apple.position:
+            snake.length += 1
+            apple.randomize_position(snake.positions)
+
+        head = snake.get_head_position()
+        if head in snake.positions[1:]:
+            snake.reset()
+            apple.randomize_position(snake.positions)
+
+        screen.fill(BLACK)
+        apple.draw(screen)
+        snake.draw(screen)
+        pygame.display.update()
+        clock.tick(FPS)
+
+    pygame.quit()
+    sys.exit()
 
 
-if __name__ == "__main__":
-    main()
+if _name_ == "_main_":
+    main()
