@@ -22,9 +22,9 @@ class Snake:
 
     def check_collision(self, screen_width, screen_height):
         head = self.body[0]
-        return (head[0] < 0 or head[0] >= screen_width or
-                head[1] < 0 or head[1] >= screen_height or
-                head in self.body[1:])
+        return (head[0] < 0 or head[0] >= screen_width
+                or head[1] < 0 or head[1] >= screen_height
+                or head in self.body[1:])
 
 
 class Food:
@@ -45,7 +45,9 @@ class Game:
         pygame.init()
         self.screen_width = 800
         self.screen_height = 600
-        self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
+        self.screen = pygame.display.set_mode(
+            (self.screen_width, self.screen_height)
+        )
         pygame.display.set_caption("Змейка")
         self.clock = pygame.time.Clock()
         self.snake = Snake()
@@ -60,13 +62,17 @@ class Game:
                 sys.exit()
             elif event.type == pygame.KEYDOWN:
                 if not self.game_over:
-                    if event.key == pygame.K_UP and self.snake.direction != (0, 10):
+                    if (event.key == pygame.K_UP 
+                            and self.snake.direction != (0, 10)):
                         self.snake.change_direction((0, -10))
-                    elif event.key == pygame.K_DOWN and self.snake.direction != (0, -10):
+                    elif (event.key == pygame.K_DOWN 
+                            and self.snake.direction != (0, -10)):
                         self.snake.change_direction((0, 10))
-                    elif event.key == pygame.K_LEFT and self.snake.direction != (10, 0):
+                    elif (event.key == pygame.K_LEFT 
+                            and self.snake.direction != (10, 0)):
                         self.snake.change_direction((-10, 0))
-                    elif event.key == pygame.K_RIGHT and self.snake.direction != (-10, 0):
+                    elif (event.key == pygame.K_RIGHT 
+                            and self.snake.direction != (-10, 0)):
                         self.snake.change_direction((10, 0))
                 if event.key == pygame.K_r and self.game_over:
                     self.restart_game()
@@ -75,7 +81,8 @@ class Game:
         if not self.game_over:
             self.snake.move()
 
-            if self.snake.check_collision(self.screen_width, self.screen_height):
+            if self.snake.check_collision(self.screen_width, 
+                                          self.screen_height):
                 self.game_over = True
 
             if self.snake.body[0] == self.food.position:
@@ -89,11 +96,11 @@ class Game:
         self.screen.fill((0, 0, 0))
 
         for segment in self.snake.body:
-            pygame.draw.rect(self.screen, (0, 255, 0), 
-                           (segment[0], segment[1], 10, 10))
+            pygame.draw.rect(self.screen, (0, 255, 0),
+                             (segment[0], segment[1], 10, 10))
 
         pygame.draw.rect(self.screen, (255, 0, 0),
-                       (self.food.position[0], self.food.position[1], 10, 10))
+                         (self.food.position[0], self.food.position[1], 10, 10))
 
         font = pygame.font.Font(None, 36)
         score_text = font.render(f"Счет: {self.score}", True, (255, 255, 255))
@@ -101,12 +108,16 @@ class Game:
 
         if self.game_over:
             game_over_font = pygame.font.Font(None, 72)
-            game_over_text = game_over_font.render("ИГРА ОКОНЧЕНА", True, (255, 0, 0))
-            restart_text = font.render("Нажмите R для перезапуска", True, (255, 255, 255))
-            self.screen.blit(game_over_text, 
-                           (self.screen_width // 2 - 180, self.screen_height // 2 - 50))
+            game_over_text = game_over_font.render("ИГРА ОКОНЧЕНА", 
+                                                   True, (255, 0, 0))
+            restart_text = font.render("Нажмите R для перезапуска", 
+                                       True, (255, 255, 255))
+            self.screen.blit(game_over_text,
+                             (self.screen_width // 2 - 180, 
+                              self.screen_height // 2 - 50))
             self.screen.blit(restart_text,
-                           (self.screen_width // 2 - 150, self.screen_height // 2 + 50))
+                             (self.screen_width // 2 - 150, 
+                              self.screen_height // 2 + 50))
 
         pygame.display.flip()
 
